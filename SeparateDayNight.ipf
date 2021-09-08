@@ -283,7 +283,7 @@ Function CalculateSolarAltitude(ReferenceWave, Year, TimeDiffFromUTC, Latitude, 
 	SolarAltitude = asin( sin(Latitude * pi/180) * sin(SunDeclination) + cos(Latitude*pi/180) * cos(SunDeclination) * cos(HourAngle) )
 	SolarOrientation = atan( cos(Latitude * pi/180) * cos(SunDeclination) * sin(HourAngle) / ( sin(Latitude * pi / 180)*sin(SolarAltitude)-sin(SunDeclination) ) )
 	
-	duplicate SolarOrientaition SolOlnotIF
+//	duplicate SolarOrientaition SolOlnotIF
 
 	variable i
 	for(i = 1; i<numpnts(ReferenceWave); i += 1)
