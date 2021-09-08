@@ -12,6 +12,6 @@ variable NumDays = 10
 make/O/N=(24*60*60*NumDays) eq1
 SetScale/P x 2678400,1,"dat", eq1
 
-Calculate_SolarAltitude_From_Coordinate(root:Eq1, Year, TimeDiffFromUTC, Latitude, Longitude)
+Calculate_SolarAltitude_From_Coordinate(root:Eq1, TimeDiffFromUTC, Latitude, Longitude)
 
 End

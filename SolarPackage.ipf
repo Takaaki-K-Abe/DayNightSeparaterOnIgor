@@ -268,11 +268,12 @@ End
 ///////////////////////////////////////
 
 
-Function Calculate_SolarAltitude_From_Coordinate(ReferenceWave, Year, TimeDiffFromUTC, Latitude, Longitude)
+Function Calculate_SolarAltitude_From_Coordinate(ReferenceWave, TimeDiffFromUTC, Latitude, Longitude)
 
 	wave ReferenceWave
 	variable Latitude, Longitude
-	variable Year, TimeDiffFromUTC
+	variable TimeDiffFromUTC
+
 	
 	string saveDF = GetDataFolder(1)
 	
@@ -282,10 +283,15 @@ Function Calculate_SolarAltitude_From_Coordinate(ReferenceWave, Year, TimeDiffFr
 	endif
 	
 	SetDataFolder root:DayNightSeparater
+	
+	variable year, month, day
+	variable startDateTime = leftx(ReferenceWave)
+	string dateString = secs2Date(startDateTime, -2, "/")
+	sscanf dateString, "%d/%d/%d", year, month, day
 
 	// preperation for calculation
-	Make/O/D/N=(numpnts(ReferenceWave)) TimeValue //
-	Make/O/D/N=(numpnts(ReferenceWave)) ThetaO // 赤緯
+	Make/O/D/N=(numpnts(ReferenceWave)) HourValue // 通し時間
+	Make/O/D/N=(numpnts(ReferenceWave)) ThetaO // 
 	Make/O/D/N=(numpnts(ReferenceWave)) SunDeclination // 赤緯
 	Make/O/D/N=(numpnts(ReferenceWave)) EquationOfTime // 均時差
 	Make/O/D/N=(numpnts(ReferenceWave)) HourAngle // 時角
@@ -301,9 +307,9 @@ Function Calculate_SolarAltitude_From_Coordinate(ReferenceWave, Year, TimeDiffFr
 	JulianDate = floor( leftx(ReferenceWave)/24/60/60 - 365.25*( Year - 1904 ) )
 
 	variable startTime = ( leftx(ReferenceWave)/24/60/60 - floor( leftx(ReferenceWave)/24/60/60 - 1 ) ) * 24
-	TimeValue = startTime + x/60/60
+	HourValue = startTime + x/60/60
 
-	ThetaO = 2 * pi * ( JulianDate + TimeValue/24 -1) / 365
+	ThetaO = 2 * pi * ( JulianDate + HourValue/24 -1) / 365
 
 	SunDeclination = 0.006918-0.399912*cos(ThetaO) + 0.070257*sin(ThetaO) - 0.006758*cos(2*ThetaO)
 		SunDeclination += 0.000907*sin(2*ThetaO) -0.002697*cos(3*ThetaO) + 0.001480*sin(3*ThetaO)
@@ -311,7 +317,7 @@ Function Calculate_SolarAltitude_From_Coordinate(ReferenceWave, Year, TimeDiffFr
 	EquationOfTime = 0.000075+0.001868*cos(ThetaO) - 0.032077*sin(ThetaO)
 		EquationOfTime += -0.014615*cos(2*ThetaO) - 0.040849*sin(2*ThetaO)
 
-	HourAngle = (TimeValue-12)*pi/12 + (Longitude - TimeDiffFromUTC*15)*pi/180 + EquationOfTime
+	HourAngle = (HourValue-12)*pi/12 + (Longitude - TimeDiffFromUTC*15)*pi/180 + EquationOfTime
 
 	SolarAltitude = asin( sin(Latitude * pi/180) * sin(SunDeclination) + cos(Latitude*pi/180) * cos(SunDeclination) * cos(HourAngle) )
 
@@ -323,6 +329,9 @@ Function Calculate_SolarAltitude_From_Coordinate(ReferenceWave, Year, TimeDiffFr
 
 	SolarOrientation += SolAlt_Diff > 0 && SolarOrientation < 0 ? pi : 0
 	SolarOrientation -= SolAlt_Diff < 0 && SolarOrientation > 0 ? pi : 0
+
+	// SolOriNotIf += SolOri_Diff > pi/2 && SolOri_Diff < 3*pi/2 ? -2*pi : 0
+	// SolOriNotIf += SolOri_Diff < -pi/2 && SolOri_Diff > -3*pi/2 ? pi : 0
 
 	variable i
 	for(i = 1; i<numpnts(ReferenceWave); i += 1)
@@ -352,7 +361,7 @@ Function Calculate_SolarAltitude_From_Coordinate(ReferenceWave, Year, TimeDiffFr
 
 	ModifyGraph zColor(SolarAltitude)={DayNight,*,*,RedWhiteBlue,1}
 
-	Killwaves TimeValue, ThetaO, SunDeclination, EquationOfTime, HourAngle
+	Killwaves ThetaO, SunDeclination, EquationOfTime, HourAngle
 	
 	Duplicate/O DayNight $(saveDF + "DayNight")
 	
