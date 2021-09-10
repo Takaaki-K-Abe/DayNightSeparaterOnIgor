@@ -375,12 +375,18 @@ End
 /// @return         
 ///
 ////////////////////////////////////////////////////////////////////////////////
-Function Calculate_SolarAltitude_From_MovingPoint(ReferenceWave, TimeDiffFromUTC, Latitude, Longitude, [intervalOfTime])
+Function Calculate_SolarAltitude_From_MovingPoint(TimeDiffFromUTC, Latitude, Longitude, [intervalOfTime])
 
-	wave ReferenceWave
 	wave Latitude, Longitude
 	variable TimeDiffFromUTC
 	variable intervalOfTime
+	
+	wave ReferenceWave = Latitude
+
+	if(numpnts(Latitude) != numpnts(Longitude))
+		print "The number of points in latitude and longitude waves is not equal."
+		Abort
+	endif
 	
 	if(ParamIsDefault(intervalOfTime))
 		intervalOfTime = 1
@@ -411,19 +417,16 @@ Function Calculate_SolarAltitude_From_MovingPoint(ReferenceWave, TimeDiffFromUTC
 	Make/O/D/N=(NumberOfWavePoints) HourAngle // 時角
 	
 	Make/O/D/N=(NumberOfWavePoints) LatitudeForCalc // 時角
-		SetScale/P x startDateTime, intervalOfTime, "dat", LatitudeForCalc
+		// SetScale/P x startDateTime, intervalOfTime, "dat", LatitudeForCalc
 		LatitudeForCalc = Latitude[ p/(deltax(Latitude)/intervalOfTime) ]
 	Make/O/D/N=(NumberOfWavePoints) LongitudeForCalc // 時角
-		SetScale/P x startDateTime, intervalOfTime, "dat", LongitudeForCalc
+		// SetScale/P x startDateTime, intervalOfTime, "dat", LongitudeForCalc
 		LongitudeForCalc = Longitude[ p/(deltax(Longitude)/intervalOfTime) ]
 
 	Make/O/D/N=(NumberOfWavePoints) SolarAltitude
 		SetScale/P x startDateTime, intervalOfTime, "dat", SolarAltitude
 	Make/O/D/N=(NumberOfWavePoints) SolarOrientation
 		SetScale/P x startDateTime, intervalOfTime, "dat", SolarOrientation
-
-	// Make/O/D/N=(numpnts(ReferenceWave)) SolarAltitude // 太陽高度
-	// Make/O/D/N=(numpnts(ReferenceWave)) SolarOrientation // 太陽高度
 	
 	// Compute the parameters for solar altitude
 	Variable DateValue
@@ -434,13 +437,13 @@ Function Calculate_SolarAltitude_From_MovingPoint(ReferenceWave, TimeDiffFromUTC
 
 	ThetaO = 2 * pi * ( DateValue + HourValue/24 -1) / 365
 
-	SolarDeclination = 0.006918-0.399912*cos(ThetaO) + 0.070257*sin(ThetaO) - 0.006758*cos(2*ThetaO)
-		SolarDeclination += 0.000907*sin(2*ThetaO) -0.002697*cos(3*ThetaO) + 0.001480*sin(3*ThetaO)
+	SolarDeclination =  0.006918-0.399912*cos(ThetaO) + 0.070257*sin(ThetaO) - 0.006758*cos(2*ThetaO)
+	SolarDeclination += 0.000907*sin(2*ThetaO) -0.002697*cos(3*ThetaO) + 0.001480*sin(3*ThetaO)
 	
 	EquationOfTime = 0.000075+0.001868*cos(ThetaO) - 0.032077*sin(ThetaO)
-		EquationOfTime += -0.014615*cos(2*ThetaO) - 0.040849*sin(2*ThetaO)
+	EquationOfTime += -0.014615*cos(2*ThetaO) - 0.040849*sin(2*ThetaO)
 
-	HourAngle = (HourValue-12)*pi/12 + (LongitudeForCalc - TimeDiffFromUTC*15)*pi/180 + EquationOfTime
+	HourAngle = (HourValue-12)*pi/12 + (LongitudeForCalc[p] - TimeDiffFromUTC*15)*pi/180 + EquationOfTime
 
 	// calculate solar altitude
 	SolarAltitude = asin( sin(LatitudeForCalc * pi/180) * sin(SolarDeclination) + cos(LatitudeForCalc*pi/180) * cos(SolarDeclination) * cos(HourAngle) )
