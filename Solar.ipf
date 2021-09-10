@@ -2,7 +2,7 @@
 #pragma rtGlobals=3		// Use modern global access method and strict wave access.
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @file 			SolarPackage.ipf
+/// @file 			Solar.ipf
 /// @breif 			Compute solar altitude orientation, daytime, twilight, and night
 /// @author         Takaaki K Abe
 /// @date           
@@ -13,7 +13,7 @@
 ///
 ////////////////////////////////////////////////////////////////////////////////
 
-Menu "Astronomical calculation"
+Menu "Astronomy"
 	Submenu "Solar"
 		"Solar Altitude at one point",/Q, Panel_CalculateSolarAltitude()
 		"Solar Altitude at multi points",/Q, Panel_CalculateSolarAltitude()
@@ -37,7 +37,7 @@ Function Panel_CalculateSolarAltitude() : Panel
 	endif
 	
 	PauseUpdate; Silent 1		// building window...
-	NewPanel/W=(Horizontal,Vertical,Horizontal + Width,Vertical + Height )/K=1
+	NewPanel/K=1/W=(Horizontal,Vertical,Horizontal + Width,Vertical + Height )/K=1
 	DoWindow/C SolarAltitudeMenu
 	
 	// title 
@@ -51,13 +51,13 @@ Function Panel_CalculateSolarAltitude() : Panel
 	GroupBox group_parameters, pos = {13, pos}, size = {310, 130}
 
 	SetVariable Latitude, title = "Latitude (degree)", pos = {25, pos + 21}, size = {137, 30}
-	SetVariable Latitude, limits = {-90,90,0.1}, value =  root:Solar:Parameters:Latitude
+	SetVariable Latitude, limits = {-90,90,0.1}, value = root:Astronomic:Solar:Parameters:Latitude
 	SetVariable Longitude, title = "Longitude (degree)", pos = {173, pos + 21}, size = {137, 30}
-	SetVariable Longitude, limits = {-180,180,0.1}, value = root:Solar:Parameters:Longitude
+	SetVariable Longitude, limits = {-180,180,0.1}, value = root:Astronomic:Solar:Parameters:Longitude
 	SetVariable TimeDiffFromUTC, title = "Time Difference from UTC time (h)", pos = {25, pos + 39}, size = {200, 30}
-	SetVariable TimeDiffFromUTC, limits = {-12,12,1}, value = root:Solar:Parameters:TimeDiffFromUTC
+	SetVariable TimeDiffFromUTC, limits = {-12,12,1}, value = root:Astronomic:Solar:Parameters:TimeDiffFromUTC
 	SetVariable IntervalOfTime, title = "Time-intervel for solar altitude (s)", pos = {25, pos + 57}, size = {200, 30}
-	SetVariable IntervalOfTime, limits = {0,600,1}, value = root:Solar:Parameters:IntervalOfTime
+	SetVariable IntervalOfTime, limits = {0,600,1}, value = root:Astronomic:Solar:Parameters:IntervalOfTime
 
 	PopupMenu popup_ReferenceWaveSelect, title="Select reference wave", proc=ReferenceWaveSelect
 	PopupMenu popup_ReferenceWaveSelect, pos={27, pos + 75}, size={98,20}
@@ -82,13 +82,13 @@ end
 Function Button_Launch_SolarAltCalculation(ctrlName)
 	string ctrlName
 	
-	SVAR RefWaveName = root:Solar:Parameters:ReferenceWaveName
+	SVAR RefWaveName = root:Astronomic:Solar:Parameters:ReferenceWaveName
 	wave ReferenceWave = $RefWaveName
 
-	NVAR Latitude = root:Solar:Parameters:Latitude
-	NVAR Longitude = root:Solar:Parameters:Longitude
-	NVAR TimeDiffFromUTC = root:Solar:Parameters:TimeDiffFromUTC
-	NVAR intervalOfTime = root:Solar:Parameters:intervalOfTime
+	NVAR Latitude = root:Astronomic:Solar:Parameters:Latitude
+	NVAR Longitude = root:Astronomic:Solar:Parameters:Longitude
+	NVAR TimeDiffFromUTC = root:Astronomic:Solar:Parameters:TimeDiffFromUTC
+	NVAR intervalOfTime = root:Astronomic:Solar:Parameters:intervalOfTime
 
 	Calculate_SolarAltitude_From_Coordinate(ReferenceWave, TimeDiffFromUTC, Latitude, Longitude, intervalOfTime=intervalOfTime)
 
@@ -106,7 +106,7 @@ Function 	ReferenceWaveSelect(ctrlName,popNum,popStr) : PopupMenuControl
 	Variable popNum
 	String popStr
 
-	SVAR ReferenceWaveName = root:Solar:Parameters:ReferenceWaveName
+	SVAR ReferenceWaveName = root:Astronomic:Solar:Parameters:ReferenceWaveName
 	ReferenceWaveName = popStr
 
 End Function
@@ -123,15 +123,19 @@ Function SetDefaultParametersForCalclateSolarAltitude()
 
 	string saveDF = GetDataFolder(1)
 	
-	if(!DataFolderExists("root:Solar"))
-		NewDataFolder root:Solar
-	endif
-	
-	if(!DataFolderExists("root:Solar:Parameters"))
-		NewDataFolder root:Solar:Parameters
+	if(!DataFolderExists("root:Astronomic"))
+		NewDataFolder root:Astronomic
 	endif
 
-	SetDataFolder root:Solar:Parameters
+	if(!DataFolderExists("root:Astronomic:Solar"))
+		NewDataFolder root:Astronomic:Solar
+	endif
+	
+	if(!DataFolderExists("root:Astronomic:Solar:Parameters"))
+		NewDataFolder root:Astronomic:Solar:Parameters
+	endif
+
+	SetDataFolder root:Astronomic:Solar:Parameters
 
 	SVAR/Z ReferenceWaveName
 	if(!SVAR_Exists(ReferenceWaveName))
@@ -161,15 +165,12 @@ Function SetDefaultParametersForCalclateSolarAltitude()
 		variable/G IntervalOfTime = 60
 	endif
 
-
 	SetDataFolder saveDF
 
 End Function
 
-
-
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief		StartCalculationOfSolarAltitude
+/// @brief		
 /// @param		
 /// @return	
 ///
@@ -179,10 +180,10 @@ Function StartCalculationOfSolarAltitude(RefWaveName)
 	string RefWaveName
 
 	wave ReferenceWave = $RefWaveName
-	NVAR Latitude = root:Solar:Parameters:Latitude
-	NVAR Longitude = root:Solar:Parameters:Longitude
-	NVAR TimeDiffFromUTC = root:Solar:Parameters:TimeDiffFromUTC
-	NVAR intervalOfTime = root:Solar:Parameters:intervalOfTime
+	NVAR Latitude = root:Astronomic:Solar:Parameters:Latitude
+	NVAR Longitude = root:Astronomic:Solar:Parameters:Longitude
+	NVAR TimeDiffFromUTC = root:Astronomic:Solar:Parameters:TimeDiffFromUTC
+	NVAR intervalOfTime = root:Astronomic:Solar:Parameters:intervalOfTime
 
 	Calculate_SolarAltitude_From_Coordinate(ReferenceWave, TimeDiffFromUTC, Latitude, Longitude, intervalOfTime=intervalOfTime)
 
@@ -215,23 +216,23 @@ Function Calculate_SolarAltitude_From_Coordinate(ReferenceWave, TimeDiffFromUTC,
 	string saveDF = GetDataFolder(1)
 	
 	// move to working directory
-	if(!DataFolderExists("root:Solar"))
-		NewDataFolder root:Solar
+	if(!DataFolderExists("root:Astronomic:Solar"))
+		NewDataFolder root:Astronomic:Solar
 	endif
 	
-	SetDataFolder root:Solar
+	SetDataFolder root:Astronomic:Solar
 	
 	variable year, month, day
 	variable startDateTime = leftx(ReferenceWave)
 	string dateString = secs2Date(startDateTime, -2, "/")
 	sscanf dateString, "%d/%d/%d", year, month, day
 
-	variable NumberOfWavePoints = ceil(numpnts(ReferenceWave)/intervalOfTime)
+	variable NumberOfWavePoints = ceil(numpnts(ReferenceWave)*deltax(ReferenceWave)/intervalOfTime)
 
 	// preperation for calculation
 	Make/O/D/N=(NumberOfWavePoints) HourValue // 通し時間
 	Make/O/D/N=(NumberOfWavePoints) ThetaO // 
-	Make/O/D/N=(NumberOfWavePoints) SunDeclination // 赤緯
+	Make/O/D/N=(NumberOfWavePoints) SolarDeclination // 赤緯
 	Make/O/D/N=(NumberOfWavePoints) EquationOfTime // 均時差
 	Make/O/D/N=(NumberOfWavePoints) HourAngle // 時角
 
@@ -252,19 +253,200 @@ Function Calculate_SolarAltitude_From_Coordinate(ReferenceWave, TimeDiffFromUTC,
 
 	ThetaO = 2 * pi * ( DateValue + HourValue/24 -1) / 365
 
-	SunDeclination = 0.006918-0.399912*cos(ThetaO) + 0.070257*sin(ThetaO) - 0.006758*cos(2*ThetaO)
-		SunDeclination += 0.000907*sin(2*ThetaO) -0.002697*cos(3*ThetaO) + 0.001480*sin(3*ThetaO)
+	SolarDeclination =  0.006918-0.399912*cos(ThetaO) + 0.070257*sin(ThetaO) - 0.006758*cos(2*ThetaO)
+	SolarDeclination += 0.000907*sin(2*ThetaO) -0.002697*cos(3*ThetaO) + 0.001480*sin(3*ThetaO)
+	
+	EquationOfTime =  0.000075+0.001868*cos(ThetaO) - 0.032077*sin(ThetaO)
+	EquationOfTime += -0.014615*cos(2*ThetaO) - 0.040849*sin(2*ThetaO)
+
+	HourAngle = (HourValue-12)*pi/12 + ( Longitude - TimeDiffFromUTC * 15) * pi/180
+	HourAngle += EquationOfTime
+	// calculate solar altitude
+	SolarAltitude =  sin(Latitude * pi/180) * sin(SolarDeclination) 
+	SolarAltitude += cos(Latitude*pi/180) * cos(SolarDeclination) * cos(HourAngle)
+	SolarAltitude =  asin( SolarAltitude )
+	
+	// calculate solar orientation
+	SolarOrientation =  cos(Latitude * pi/180) * cos(SolarDeclination) * sin(HourAngle)
+	SolarOrientation /= (sin(Latitude * pi / 180) * sin(SolarAltitude) - sin(SolarDeclination))
+	SolarOrientation =  atan( SolarOrientation )
+	Duplicate/D/O SolarAltitude SolAlt_Diff
+	Differentiate/Meth=1 SolAlt_Diff
+
+	SolarOrientation += SolAlt_Diff > 0 && SolarOrientation < 0 ? pi : 0
+	SolarOrientation -= SolAlt_Diff < 0 && SolarOrientation > 0 ? pi : 0
+
+	variable i
+	for(i = 1; i<NumberOfWavePoints; i += 1)
+
+		if (SolarOrientation[i]-SolarOrientation[i-1] > pi/2 && SolarOrientation[i]-SolarOrientation[i-1] < 3*pi/2)
+			SolarOrientation[i] -= pi
+		endif
+		if (SolarOrientation[i]-SolarOrientation[i-1]< -pi/2 && SolarOrientation[i]-SolarOrientation[i-1] > -3*pi/2)
+			SolarOrientation[i] += pi
+		endif
+
+	endfor
+
+	SolarAltitude *= 180 / pi
+	SolarOrientation *= 180 / pi
+
+	// Separate daytime, twilight nighttime
+	variable Solar_Threshold = -1/60*50
+	Duplicate/O SolarAltitude Daytime
+		Daytime = SolarAltitude > Solar_Threshold ? 1 : 0
+		note Daytime, "Type:Mask; \n 1: Daytime \n 0: Nighttime"
+
+	Duplicate/O SolarAltitude Twilight
+		Twilight = SolarAltitude <= Solar_Threshold && SolarAltitude > -18 ? 1 : 0
+		note Twilight, "Type:Mask; \n 1: Twilight \n 0: Nighttime"
+	
+	Duplicate/O SolarAltitude Nighttime
+		Nighttime = SolarAltitude <= -18 ? 1 : 0
+		note Nighttime, "Type:Mask; \n 1: Night"
+
+	DisplaySolarAltitude(SolarAltitude, Daytime, Twilight)
+		
+	Duplicate/O Daytime $(saveDF + "Daytime")
+	Duplicate/O Twilight $(saveDF + "Twilight")
+	Duplicate/O Nighttime $(saveDF + "Nighttime")
+	Duplicate/O SolarAltitude $(saveDF + "SolarAltitude")
+	
+	Killwaves ThetaO, SolarDeclination, EquationOfTime, HourAngle
+	Killwaves SolAlt_Diff, HourValue
+
+	SetDataFolder saveDF
+
+End
+///////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief          
+/// @param[in]      
+/// @param[out]     
+/// @return         
+/// @author         
+/// @date           
+/// @version        
+/// @note           
+/// @attention      
+/// @par            
+///                 
+///
+////////////////////////////////////////////////////////////////////////////////
+Function DisplaySolarAltitude(SolarAltitude, Daytime, Twilight)
+
+	wave SolarAltitude, Daytime, Twilight
+	// string PathTwilight = GetWavesDataFolder(Twilight, 2)
+	// string PathDaytime = GetWavesDataFolder(Daytime, 2)
+	// string PathSolarAltitude = GetWavesDataFolder(SolarAltitude, 2)
+
+	DoWindow SolAltView
+	if(V_flag)
+		DoWindow/K SolAltView
+	endif
+	Display/K=1/R Twilight
+	AppendtoGraph SolarAltitude
+	DoWindow/C SolAltView
+
+	// ModifyGraph zColor(SolarAltitude)={DayNight,*,*,RedWhiteBlue,1}
+	ModifyGraph zColor(SolarAltitude)={Daytime,*,*,BlueGreenOrange,0}
+	ModifyGraph manTick(left)={0,30,0,0},manMinor(left)={2,0}
+	ModifyGraph mode(Twilight)=7, rgb(Twilight)=(65535,54607,32768)
+	ModifyGraph hbFill(Twilight)=4, lsize(Twilight)=0
+	ModifyGraph tick(right)=3,noLabel(right)=2,axRGB(right)=(65535,65535,65535)
+	Label left "Solor altitude (°)"
+	Label bottom "Date and Time"
+	SetAxis left -90,90
+
+End
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief     ある緯度経度の地点の日の出日の入りの時間を計算する
+/// @fn        SunAltitudeFix()
+// -- waves ---
+/// @param[in] Mold: テンプレートに用いるデータセット
+// -- variables ---
+/// @param[in] Year: 年
+/// @param[in] GMTDiff: GMTからの時差
+/// @param[in] BaseLat: 緯度
+/// @param[in] BaseLon: 経度
+/// @return         
+///
+////////////////////////////////////////////////////////////////////////////////
+Function Calculate_SolarAltitude_From_MovingPoint(ReferenceWave, TimeDiffFromUTC, Latitude, Longitude, [intervalOfTime])
+
+	wave ReferenceWave
+	wave Latitude, Longitude
+	variable TimeDiffFromUTC
+	variable intervalOfTime
+	
+	if(ParamIsDefault(intervalOfTime))
+		intervalOfTime = 1
+	endif
+	
+	string saveDF = GetDataFolder(1)
+	
+	// move to working directory
+	if(!DataFolderExists("root:Astronomic:Solar"))
+		NewDataFolder root:Astronomic:Solar
+	endif
+	
+	SetDataFolder root:Astronomic:Solar
+	
+	// read start year
+	variable year, month, day
+	variable startDateTime = leftx(ReferenceWave)
+	string dateString = secs2Date(startDateTime, -2, "/")
+	sscanf dateString, "%d/%d/%d", year, month, day
+
+	variable NumberOfWavePoints = ceil(numpnts(ReferenceWave)*deltax(ReferenceWave)/intervalOfTime)
+
+	// preperation for calculation
+	Make/O/D/N=(NumberOfWavePoints) HourValue // 通し時間
+	Make/O/D/N=(NumberOfWavePoints) ThetaO // 
+	Make/O/D/N=(NumberOfWavePoints) SolarDeclination // 赤緯
+	Make/O/D/N=(NumberOfWavePoints) EquationOfTime // 均時差
+	Make/O/D/N=(NumberOfWavePoints) HourAngle // 時角
+	
+	Make/O/D/N=(NumberOfWavePoints) LatitudeForCalc // 時角
+		SetScale/P x startDateTime, intervalOfTime, "dat", LatitudeForCalc
+		LatitudeForCalc = Latitude[ p/(deltax(Latitude)/intervalOfTime) ]
+	Make/O/D/N=(NumberOfWavePoints) LongitudeForCalc // 時角
+		SetScale/P x startDateTime, intervalOfTime, "dat", LongitudeForCalc
+		LongitudeForCalc = Longitude[ p/(deltax(Longitude)/intervalOfTime) ]
+
+	Make/O/D/N=(NumberOfWavePoints) SolarAltitude
+		SetScale/P x startDateTime, intervalOfTime, "dat", SolarAltitude
+	Make/O/D/N=(NumberOfWavePoints) SolarOrientation
+		SetScale/P x startDateTime, intervalOfTime, "dat", SolarOrientation
+
+	// Make/O/D/N=(numpnts(ReferenceWave)) SolarAltitude // 太陽高度
+	// Make/O/D/N=(numpnts(ReferenceWave)) SolarOrientation // 太陽高度
+	
+	// Compute the parameters for solar altitude
+	Variable DateValue
+	DateValue = floor( leftx(ReferenceWave)/24/60/60 - 365.25*( Year - 1904 ) )
+
+	variable startTime = ( leftx(ReferenceWave)/24/60/60 - floor( leftx(ReferenceWave)/24/60/60 - 1 ) ) * 24
+	HourValue = startTime + x/60/60*intervalOfTime
+
+	ThetaO = 2 * pi * ( DateValue + HourValue/24 -1) / 365
+
+	SolarDeclination = 0.006918-0.399912*cos(ThetaO) + 0.070257*sin(ThetaO) - 0.006758*cos(2*ThetaO)
+		SolarDeclination += 0.000907*sin(2*ThetaO) -0.002697*cos(3*ThetaO) + 0.001480*sin(3*ThetaO)
 	
 	EquationOfTime = 0.000075+0.001868*cos(ThetaO) - 0.032077*sin(ThetaO)
 		EquationOfTime += -0.014615*cos(2*ThetaO) - 0.040849*sin(2*ThetaO)
 
-	HourAngle = (HourValue-12)*pi/12 + (Longitude - TimeDiffFromUTC*15)*pi/180 + EquationOfTime
+	HourAngle = (HourValue-12)*pi/12 + (LongitudeForCalc - TimeDiffFromUTC*15)*pi/180 + EquationOfTime
 
 	// calculate solar altitude
-	SolarAltitude = asin( sin(Latitude * pi/180) * sin(SunDeclination) + cos(Latitude*pi/180) * cos(SunDeclination) * cos(HourAngle) )
+	SolarAltitude = asin( sin(LatitudeForCalc * pi/180) * sin(SolarDeclination) + cos(LatitudeForCalc*pi/180) * cos(SolarDeclination) * cos(HourAngle) )
 
 	// calculate solar orientation
-	SolarOrientation = atan( cos(Latitude * pi/180) * cos(SunDeclination) * sin(HourAngle) / ( sin(Latitude * pi / 180)*sin(SolarAltitude)-sin(SunDeclination) ) )
+	SolarOrientation = atan( cos(LatitudeForCalc * pi/180) * cos(SolarDeclination) * sin(HourAngle) / ( sin(LatitudeForCalc * pi / 180)*sin(SolarAltitude)-sin(SolarDeclination) ) )
 	
 	Duplicate/D/O SolarAltitude SolAlt_Diff
 	Differentiate/Meth=1 SolAlt_Diff
@@ -287,35 +469,31 @@ Function Calculate_SolarAltitude_From_Coordinate(ReferenceWave, TimeDiffFromUTC,
 	SolarAltitude *= 180 / pi
 	SolarOrientation *= 180 / pi
 
+	variable Solar_Threshold = -1/60*50
 	Duplicate/O SolarAltitude Daytime
-		Daytime = SolarAltitude>0 ? 1 : 0
+		Daytime = SolarAltitude > Solar_Threshold ? 1 : 0
 		note Daytime, "Type:Mask; \n 1: Daytime \n 0: Nighttime"
+	
+	Duplicate/O SolarAltitude Twilight
+		Twilight = SolarAltitude <= Solar_Threshold && SolarAltitude > -18 ? 1 : 0
+		note Twilight, "Type:Mask; \n 1: Twilight \n 0: Nighttime"
+	
+	Duplicate/O SolarAltitude Nighttime
+		Nighttime = SolarAltitude <= -18 ? 1 : 0
+		note Nighttime, "Type:Mask; \n 1: Night"
 
-	DoWindow SolAltView
-	if(V_flag)
-		DoWindow/K SolAltView
-	endif
-	Display SolarAltitude
-	DoWindow/C SolAltView
-
-	// ModifyGraph zColor(SolarAltitude)={DayNight,*,*,RedWhiteBlue,1}
-	ModifyGraph zColor(SolarAltitude)={Daytime,*,*,BlueGreenOrange,0}
-	ModifyGraph manTick(left)={0,30,0,0},manMinor(left)={2,0}
-	Label left "Solor altitude (°)"
-	Label bottom "Date and Time"
-	SetAxis left -90,90
-
-	Killwaves ThetaO, SunDeclination, EquationOfTime, HourAngle
-	Killwaves SolAlt_Diff, HourValue
+	DisplaySolarAltitude(SolarAltitude, Daytime, Twilight)
 	
 	Duplicate/O Daytime $(saveDF + "Daytime")
 	Duplicate/O SolarAltitude $(saveDF + "SolarAltitude")
-	
+
+	Killwaves ThetaO, SolarDeclination, EquationOfTime, HourAngle
+	Killwaves SolAlt_Diff, HourValue, LatitudeForCalc, LongitudeForCalc
+
 	SetDataFolder saveDF
 
 End
 ///////////////////////////////////////
-
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief		ReturnTwilights_and_Nights
@@ -331,15 +509,16 @@ Function ReturnTwilights_and_Nights(SolarAltitude, type)
 	string NameOfOutput
 	variable minSolAlt, maxSolAlt
 
+	variable Solar_Threshold = 1/60*50
 	switch(type)
 		case 0:
 			NameOfOutput = "Twilight"
-			maxSolAlt = 0
+			maxSolAlt = Solar_Threshold
 			minSolAlt = -18
 			break
 		case 1:
 			NameOfOutput = "Twilight_civil"
-			maxSolAlt = 0
+			maxSolAlt = Solar_Threshold
 			minSolAlt = -6
 			break
 		case 2:
