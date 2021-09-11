@@ -8,28 +8,43 @@
 /// @date           
 /// Version:       	1.0
 /// Revision:      	0
-/// @note           ファイルに備考などを明記する場合はここへ書き込む
+/// @note			parameters are from (http://www.es.ris.ac.jp/~nakagawa/met_cal/solar.html)
+/// 						
 /// @attention      ファイルに注意書きなどを明記する場合はここへ書き込む
 ///
 ////////////////////////////////////////////////////////////////////////////////
 
 Menu "Astronomy"
 	Submenu "Solar"
-		"Solar Altitude at one point",/Q, Panel_CalculateSolarAltitude()
-		"Solar Altitude at multi points",/Q, Panel_CalculateSolarAltitude()
+		"Solar Altitude at one point",/Q, Panel_CalculateSolarAltitude_One()
+		"Solar Altitude at moving points",/Q, Panel_CalculateSolarAltitude_Moving()
 	End
 End
 
 
-Function Panel_CalculateSolarAltitude() : Panel
+//	================================================================================================
+//										Solar Altitude at one point
+//	================================================================================================
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief		S
+/// @param		
+/// @return	
+///
+////////////////////////////////////////////////////////////////////////////////
+Function Panel_CalculateSolarAltitude_One() : Panel
 
 	SetDefaultParametersForCalclateSolarAltitude()
-	
-	variable pos = 0
-	
-	variable Width, Height, Vertical, Horizontal	
-	Horizontal = 703; Vertical = 56
-	Width = 330; Height = 365
+		
+	variable Width = 250
+	variable Height = 200
+	variable Vertical = 56
+	variable Horizontal = 703
+
+	variable vertical_pos = 0
+	variable vertical_spacing = 21
+	string PathOfVariables = "root:Astronomic:Solar:Parameters:"
 	
 	DoWindow SolarAltitudeMenu
 	if(V_flag == 1)
@@ -41,35 +56,40 @@ Function Panel_CalculateSolarAltitude() : Panel
 	DoWindow/C SolarAltitudeMenu
 	
 	// title 
-	pos += 9
-	TitleBox title_ParamSet, pos={100,pos},size={116,14},title="\\f01Calculate Solar Altitude"
+	vertical_pos += 9
+	TitleBox title_ParamSet, pos={30, vertical_pos},size={116,14},title="\\f01Calculate Solar Altitude"
 	TitleBox title_ParamSet, fSize=14,frame=0
 
 	// Profiles
-	pos += 25
-	GroupBox group_parameters, frame = 0, title = "\Z11Parameters for Calculation"
-	GroupBox group_parameters, pos = {13, pos}, size = {310, 130}
+	vertical_pos += 25
+	GroupBox group_parameters, frame = 0, title = "\Z11Parameters"
+	GroupBox group_parameters, pos = {13, vertical_pos}, size = {220, 5*vertical_Spacing}
 
-	SetVariable Latitude, title = "Latitude (degree)", pos = {25, pos + 21}, size = {137, 30}
-	SetVariable Latitude, limits = {-90,90,0.1}, value = root:Astronomic:Solar:Parameters:Latitude
-	SetVariable Longitude, title = "Longitude (degree)", pos = {173, pos + 21}, size = {137, 30}
-	SetVariable Longitude, limits = {-180,180,0.1}, value = root:Astronomic:Solar:Parameters:Longitude
-	SetVariable TimeDiffFromUTC, title = "Time Difference from UTC time (h)", pos = {25, pos + 39}, size = {200, 30}
-	SetVariable TimeDiffFromUTC, limits = {-12,12,1}, value = root:Astronomic:Solar:Parameters:TimeDiffFromUTC
-	SetVariable IntervalOfTime, title = "Time-intervel for solar altitude (s)", pos = {25, pos + 57}, size = {200, 30}
-	SetVariable IntervalOfTime, limits = {0,600,1}, value = root:Astronomic:Solar:Parameters:IntervalOfTime
+	vertical_pos += vertical_spacing
+	SetVariable Latitude, title = "Latitude (degree)", pos = {25, vertical_pos}, size = {137, 30}
+	SetVariable Latitude, limits = {-90,90,0.1}, value = $( pathOfVariables+"Latitude" )
+	vertical_pos += vertical_spacing
+	SetVariable Longitude, title = "Longitude (degree)", pos = {25, vertical_pos}, size = {137, 30}
+	SetVariable Longitude, limits = {-180,180,0.1}, value = $( pathOfVariables+"Longitude" )
+	vertical_pos += vertical_spacing
+	SetVariable TimeDiffFromUTC, title = "Time Difference from UTC time (h)", pos = {25, vertical_pos}, size = {200, 30}
+	SetVariable TimeDiffFromUTC, limits = {-12,12,1}, value = $( pathOfVariables+"TimeDiffFromUTC" )
+	vertical_pos += vertical_spacing
+	SetVariable IntervalOfTime, title = "Time-intervel for solar altitude (s)", pos = {25, vertical_pos}, size = {200, 30}
+	SetVariable IntervalOfTime, limits = {0,600,1}, value = $( pathOfVariables+"IntervalOfTime" )
 
+	vertical_pos += 1.5*vertical_spacing 
 	PopupMenu popup_ReferenceWaveSelect, title="Select reference wave", proc=ReferenceWaveSelect
-	PopupMenu popup_ReferenceWaveSelect, pos={27, pos + 75}, size={98,20}
+	PopupMenu popup_ReferenceWaveSelect, pos={27, vertical_pos}, size={98,20}
 	PopupMenu popup_ReferenceWaveSelect, value= WaveList("*", ";", ""), popvalue="   -   "
-	
+	vertical_pos += 1.25*vertical_spacing 
 	Button button_StartCalc, title="Calculate Solar Altitude", proc = Button_Launch_SolarAltCalculation
-	Button button_StartCalc, pos = {25, pos + 100}, size={180, 20}
+	Button button_StartCalc, pos = {25, vertical_pos}, size={180, 20}
 
 	// Button button_CloseParamWindow, title = "Close", proc = Button_CloseParamWindow
 	// Button button_CloseParamWindow, pos = {105, pos}, size = {90,20}
 	
-	variable PanelHeight = pos + 25
+	variable PanelHeight = vertical_pos + 25
 	
 end
 
@@ -112,14 +132,13 @@ Function 	ReferenceWaveSelect(ctrlName,popNum,popStr) : PopupMenuControl
 End Function
 
 
-STRUCTURE SolarAltitude
-
-	wave ReferenceWave
-	variable TimeDiffFromUTC
-
-EndSTRUCTURE
-
-Function SetDefaultParametersForCalclateSolarAltitude()
+////////////////////////////////////////////////////////////////////////////////
+/// @brief		name
+/// @param		
+/// @return	
+///
+////////////////////////////////////////////////////////////////////////////////
+static Function SetDefaultParametersForCalclateSolarAltitude()
 
 	string saveDF = GetDataFolder(1)
 	
@@ -151,6 +170,17 @@ Function SetDefaultParametersForCalclateSolarAltitude()
 	NVAR/Z Longitude
 	if(!NVAR_Exists(Longitude))
 		variable/G Longitude = 135
+	endif
+
+	//! in the case for calculating moving point
+	SVAR/Z LatitudeWaveName
+	if(!SVAR_Exists(LatitudeWaveName))
+		string/G LatitudeWaveName
+	endif
+
+	SVAR/Z LongitudeWaveName
+	if(!SVAR_Exists(LongitudeWaveName))
+		string/G LongitudeWaveName
 	endif
 
 	//! the time difference in standard time from UTC time
@@ -188,6 +218,7 @@ Function StartCalculationOfSolarAltitude(RefWaveName)
 	Calculate_SolarAltitude_From_Coordinate(ReferenceWave, TimeDiffFromUTC, Latitude, Longitude, intervalOfTime=intervalOfTime)
 
 End Function
+
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief     ある緯度経度の地点の日の出日の入りの時間を計算する
@@ -338,13 +369,12 @@ End
 Function DisplaySolarAltitude(SolarAltitude, Daytime, Twilight)
 
 	wave SolarAltitude, Daytime, Twilight
-	// string PathTwilight = GetWavesDataFolder(Twilight, 2)
-	// string PathDaytime = GetWavesDataFolder(Daytime, 2)
-	// string PathSolarAltitude = GetWavesDataFolder(SolarAltitude, 2)
 
 	DoWindow SolAltView
 	if(V_flag)
-		DoWindow/K SolAltView
+		DoWindow/F SolAltView
+		return 0
+		// DoWindow/K SolAltView
 	endif
 	Display/K=1/R Twilight
 	AppendtoGraph SolarAltitude
@@ -362,17 +392,133 @@ Function DisplaySolarAltitude(SolarAltitude, Daytime, Twilight)
 
 End
 
+//	================================================================================================
+//										Solar Altitude at moving points
+//	================================================================================================
+
+
+Function Panel_CalculateSolarAltitude_Moving() : Panel
+
+	SetDefaultParametersForCalclateSolarAltitude()
+
+	variable Width = 250
+	variable Height = 200
+	variable Vertical = 56
+	variable Horizontal = 703
+
+	variable vertical_pos = 0
+	variable vertical_spacing = 19
+	string pathOfVariables = "root:Astronomic:Solar:Parameters:"
+
+	DoWindow SolarAltitudeMenu
+	if(V_flag == 1)
+		DoWindow/K SolarAltitudeMenu
+	endif
+		
+	PauseUpdate; Silent 1		// building window...
+	NewPanel/K=1/W=(Horizontal,Vertical,Horizontal + Width,Vertical + Height )
+	DoWindow/C SolarAltitudeMenu
+	
+	// title 
+	vertical_pos += 9
+	TitleBox title_ParamSet, pos={30,vertical_pos},size={116,14},title="\\f01Calculate Solar Altitude"
+	TitleBox title_ParamSet, fSize=14,frame=0
+
+	// Profiles
+	vertical_pos += 25
+	GroupBox group_Startparameters, frame = 0, title = "\Z11Waves and Parameters"
+	GroupBox group_Startparameters, pos = {13, vertical_pos}, size = {220, 5*vertical_spacing}
+
+	vertical_pos += vertical_spacing
+	PopupMenu popup_LatitudeWaveSelect, title="Latitude wave", proc=LatitudeWaveSelect
+	PopupMenu popup_LatitudeWaveSelect, pos={27, vertical_pos}, size={98,20}
+	PopupMenu popup_LatitudeWaveSelect, value= WaveList("*", ";", ""), popvalue="   -   "
+	vertical_pos += vertical_spacing
+	PopupMenu popup_LongitudeWaveSelect, title="Longitude wave", proc=LongitudeWaveSelect
+	PopupMenu popup_LongitudeWaveSelect, pos={27, vertical_pos}, size={98,20}
+	PopupMenu popup_LongitudeWaveSelect, value= WaveList("*", ";", ""), popvalue="   -   "
+
+	vertical_pos += vertical_spacing
+	SetVariable TimeDiffFromUTC, title = "Time Difference from UTC time (h)", pos = {25, vertical_pos}, size = {200, 30}
+	SetVariable TimeDiffFromUTC, limits = {-12,12,1}, value = $(pathOfVariables+"TimeDiffFromUTC")
+	vertical_pos += vertical_spacing
+	SetVariable IntervalOfTime, title = "Time-intervel for solar altitude (s)", pos = {25, vertical_pos}, size = {200, 30}
+	SetVariable IntervalOfTime, limits = {0,600,1}, value = $(pathOfVariables+"IntervalOfTime")
+
+	vertical_pos += vertical_spacing + 10
+	Button button_StartCalc, title="Calculate Solar Altitude", proc = Button_Launch_SolarAltCalculation_Moving
+	Button button_StartCalc, pos = {25, vertical_pos}, size={180, 20}
+
+	variable PanelHeight = vertical_pos + 25
+	
+end
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief		PopupMenuControl of popup_LatitudeWaveSelect in Panel_CalculateSolarAltitude_Moving()
+////////////////////////////////////////////////////////////////////////////////
+Function 	LatitudeWaveSelect(ctrlName,popNum,popStr) : PopupMenuControl
+
+	String ctrlName
+	Variable popNum
+	String popStr
+
+	SVAR LatitudeWaveName = root:Astronomic:Solar:Parameters:LatitudeWaveName
+	LatitudeWaveName = popStr
+
+End Function
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief		PopupMenuControl of popup_LongitudeWaveSelect in Panel_CalculateSolarAltitude_Moving()
+////////////////////////////////////////////////////////////////////////////////
+Function 	LongitudeWaveSelect(ctrlName,popNum,popStr) : PopupMenuControl
+
+	String ctrlName
+	Variable popNum
+	String popStr
+
+	SVAR LongitudeWaveName = root:Astronomic:Solar:Parameters:LongitudeWaveName
+	LongitudeWaveName = popStr
+
+End Function
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief		Proc of button_StartCalc in Panel_CalculateSolarAltitude_Moving()
+////////////////////////////////////////////////////////////////////////////////
+Function Button_Launch_SolarAltCalculation_Moving(ctrlName)
+	string ctrlName
+	
+	string pathofVariables = "root:Astronomic:Solar:Parameters:"
+
+
+	SVAR Latitude = $( pathOfVariables + "LatitudeWaveName")
+	wave LatitudeWave =$Latitude
+	SVAR Longitude = $( pathOfVariables + "LongitudeWaveName")
+	wave LongitudeWave =$Longitude
+	NVAR TimeDiffFromUTC = $( pathOfVariables + "TimeDiffFromUTC")
+	NVAR intervalOfTime = $( pathOfVariables + "intervalOfTime")
+
+	if(numpnts(LatitudeWave)!=numpnts(LongitudeWave))
+		print "The data length of Latitude is not equal to that of Longitude!"
+		print "Please confirm the data length"
+		Abort
+	endif
+
+	Calculate_SolarAltitude_From_MovingPoint(TimeDiffFromUTC, LatitudeWave, LongitudeWave, intervalOfTime=intervalOfTime)
+
+End Function
+
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief     ある緯度経度の地点の日の出日の入りの時間を計算する
-/// @fn        SunAltitudeFix()
 // -- waves ---
-/// @param[in] Mold: テンプレートに用いるデータセット
+/// @param[in] Latitude (wave) time series of Latitude
+/// @param[in] Longitude (wave) time series of Longitude
 // -- variables ---
-/// @param[in] Year: 年
-/// @param[in] GMTDiff: GMTからの時差
-/// @param[in] BaseLat: 緯度
-/// @param[in] BaseLon: 経度
-/// @return         
+/// @param[in] TimeDiffFromUTC (variable) Time difference between standard time and UTC
+/// @param[in] intervalOfTime (variable) time interval for solar altitude wave (second)
+/// @return SolarAltitude
+/// @return Daytime
+/// @return Twilight
+/// @return Nighttime
 ///
 ////////////////////////////////////////////////////////////////////////////////
 Function Calculate_SolarAltitude_From_MovingPoint(TimeDiffFromUTC, Latitude, Longitude, [intervalOfTime])

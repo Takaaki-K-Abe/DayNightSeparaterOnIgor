@@ -196,7 +196,7 @@ Function ReadDateTimeString(dateString, timeString)
 End
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief		name
+/// @brief		
 /// @param		
 /// @return	
 ///
@@ -238,7 +238,7 @@ static Function SetDefaultParameters()
 	endif
 	SVAR/Z waveNote
 	if(!SVAR_Exists(waveNote))
-		string/G waveNote = " "
+		string/G waveNote = ""
 	endif
 
 
