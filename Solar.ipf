@@ -2,15 +2,15 @@
 #pragma rtGlobals=3		// Use modern global access method and strict wave access.
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @file 			Solar.ipf
-/// @breif 			Compute solar altitude orientation, daytime, twilight, and night
-/// @author         Takaaki K Abe
+/// @file		Solar.ipf
+/// @breif		Compute solar altitude orientation, daytime, twilight, and night
+/// @author		Takaaki K Abe
 /// @date           
-/// Version:       	1.0
-/// Revision:      	0
-/// @note			parameters are from (http://www.es.ris.ac.jp/~nakagawa/met_cal/solar.html)
+/// Version:	1.0
+/// Revision:	0
+/// @note		parameters are derived from (http://www.es.ris.ac.jp/~nakagawa/met_cal/solar.html)
 /// 						
-/// @attention      ファイルに注意書きなどを明記する場合はここへ書き込む
+/// @attention      
 ///
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -28,7 +28,7 @@ End
 
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief		S
+/// @brief		Create Panel for Calculation of Solar Altitude
 /// @param		
 /// @return	
 ///
@@ -68,12 +68,15 @@ Function Panel_CalculateSolarAltitude_One() : Panel
 	vertical_pos += vertical_spacing
 	SetVariable Latitude, title = "Latitude (degree)", pos = {25, vertical_pos}, size = {137, 30}
 	SetVariable Latitude, limits = {-90,90,0.1}, value = $( pathOfVariables+"Latitude" )
+	
 	vertical_pos += vertical_spacing
 	SetVariable Longitude, title = "Longitude (degree)", pos = {25, vertical_pos}, size = {137, 30}
 	SetVariable Longitude, limits = {-180,180,0.1}, value = $( pathOfVariables+"Longitude" )
+	
 	vertical_pos += vertical_spacing
 	SetVariable TimeDiffFromUTC, title = "Time Difference from UTC time (h)", pos = {25, vertical_pos}, size = {200, 30}
 	SetVariable TimeDiffFromUTC, limits = {-12,12,1}, value = $( pathOfVariables+"TimeDiffFromUTC" )
+	
 	vertical_pos += vertical_spacing
 	SetVariable IntervalOfTime, title = "Time-intervel for solar altitude (s)", pos = {25, vertical_pos}, size = {200, 30}
 	SetVariable IntervalOfTime, limits = {0,600,1}, value = $( pathOfVariables+"IntervalOfTime" )
@@ -82,6 +85,7 @@ Function Panel_CalculateSolarAltitude_One() : Panel
 	PopupMenu popup_ReferenceWaveSelect, title="Select reference wave", proc=ReferenceWaveSelect
 	PopupMenu popup_ReferenceWaveSelect, pos={27, vertical_pos}, size={98,20}
 	PopupMenu popup_ReferenceWaveSelect, value= WaveList("*", ";", ""), popvalue="   -   "
+	
 	vertical_pos += 1.25*vertical_spacing 
 	Button button_StartCalc, title="Calculate Solar Altitude", proc = Button_Launch_SolarAltCalculation
 	Button button_StartCalc, pos = {25, vertical_pos}, size={180, 20}
@@ -210,6 +214,7 @@ Function StartCalculationOfSolarAltitude(RefWaveName)
 	string RefWaveName
 
 	wave ReferenceWave = $RefWaveName
+	
 	NVAR Latitude = root:Astronomic:Solar:Parameters:Latitude
 	NVAR Longitude = root:Astronomic:Solar:Parameters:Longitude
 	NVAR TimeDiffFromUTC = root:Astronomic:Solar:Parameters:TimeDiffFromUTC
@@ -335,16 +340,17 @@ Function Calculate_SolarAltitude_From_Coordinate(ReferenceWave, TimeDiffFromUTC,
 	Duplicate/O SolarAltitude Nighttime
 		Nighttime = SolarAltitude <= -18 ? 1 : 0
 		note Nighttime, "Type:Mask; \n 1: Night"
-
-	DisplaySolarAltitude(SolarAltitude, Daytime, Twilight)
 		
 	Duplicate/O Daytime $(saveDF + "Daytime")
 	Duplicate/O Twilight $(saveDF + "Twilight")
 	Duplicate/O Nighttime $(saveDF + "Nighttime")
 	Duplicate/O SolarAltitude $(saveDF + "SolarAltitude")
 	
+	DisplaySolarAltitude($(saveDF+"SolarAltitude"), $(saveDF+"Daytime"), $(saveDF+"Twilight"))
+	
 	Killwaves ThetaO, SolarDeclination, EquationOfTime, HourAngle
 	Killwaves SolAlt_Diff, HourValue
+	Killwaves/Z Daytime, Nighttime, Twilight
 
 	SetDataFolder saveDF
 
@@ -356,14 +362,7 @@ End
 /// @brief          
 /// @param[in]      
 /// @param[out]     
-/// @return         
-/// @author         
-/// @date           
-/// @version        
-/// @note           
-/// @attention      
-/// @par            
-///                 
+/// @return                      
 ///
 ////////////////////////////////////////////////////////////////////////////////
 Function DisplaySolarAltitude(SolarAltitude, Daytime, Twilight)
@@ -630,14 +629,17 @@ Function Calculate_SolarAltitude_From_MovingPoint(TimeDiffFromUTC, Latitude, Lon
 	Duplicate/O SolarAltitude Nighttime
 		Nighttime = SolarAltitude <= -18 ? 1 : 0
 		note Nighttime, "Type:Mask; \n 1: Night"
-
-	DisplaySolarAltitude(SolarAltitude, Daytime, Twilight)
 	
 	Duplicate/O Daytime $(saveDF + "Daytime")
+	Duplicate/O Twilight $(saveDF + "Twilight")
+	Duplicate/O Nighttime $(saveDF + "Nighttime")
 	Duplicate/O SolarAltitude $(saveDF + "SolarAltitude")
 
 	Killwaves ThetaO, SolarDeclination, EquationOfTime, HourAngle
 	Killwaves SolAlt_Diff, HourValue, LatitudeForCalc, LongitudeForCalc
+	Killwaves/Z Daytime, Nighttime, Twilight
+	
+	DisplaySolarAltitude($(saveDF+"SolarAltitude"), $(saveDF+"Daytime"), $(saveDF+"Twilight"))
 
 	SetDataFolder saveDF
 
@@ -692,3 +694,4 @@ Function ReturnTwilights_and_Nights(SolarAltitude, type)
 	outputWave = SolarAltitude <= maxSolAlt && SolarAltitude > minSolAlt ? 1 : 0
 
 End Function
+

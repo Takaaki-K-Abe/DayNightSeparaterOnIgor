@@ -153,6 +153,11 @@ Function CreateTimeSeriesPath()
 
 	variable startDateTime = ReadDateTimeString(startDateString, startTimeString)
 	variable endDateTime = ReadDateTimeString(endDateString, endTimeString)
+
+	if(startDateTime > endDateTime)
+		print "The end date and time is earlier than start date and time!"
+		Abort
+	endif
 	
 	variable numberOfPoints = ceil((endDateTime - startDateTime)/intervalOfTime) + 1
 
